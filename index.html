@@ -6,7 +6,7 @@
     <title>Carte Mentale Interactive</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis-network.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis-network.min.js"></script>
-    <style>
+   <style>
         body, html {
             margin: 0;
             padding: 0;
@@ -15,7 +15,7 @@
             font-family: Arial, sans-serif;
         }
         #mymap {
-            height: calc(100% - 200px);
+            height: calc(100% - 150px);
         }
         .options-container {
             background-color: #f9f9f9;
@@ -27,7 +27,7 @@
             right: 0;
             display: flex;
             flex-wrap: wrap;
-            justify-content: space-between;
+            justify-content: space-around;
             align-items: center;
         }
         .options-container > div {
@@ -35,13 +35,15 @@
         }
         .options-container input[type="text"],
         .options-container select {
-            padding: 5px;
+            padding: 8px;
             border: 1px solid #ccc;
             border-radius: 3px;
             font-size: 14px;
+            width: 200px;
+            box-sizing: border-box;
         }
         .options-container button {
-            padding: 8px 15px;
+            padding: 10px 20px;
             border: none;
             background-color: #4CAF50;
             color: white;
@@ -75,6 +77,9 @@
         .sidebar.active {
             right: 0;
         }
+        .options-container > div > * {
+            margin-right: 10px;
+        }
     </style>
 </head>
 <body>
@@ -84,38 +89,32 @@
     </div>
     <div class="options-container">
         <div>
-            <label for="node-name">Nom du Nœud :</label>
-            <input type="text" id="node-name">
+            <input type="text" id="node-name" placeholder="Nom du Nœud">
         </div>
         <div>
-            <label for="node-color">Couleur du Nœud :</label>
             <input type="color" id="node-color" onchange="changeNodeColor()">
+            <label for="node-color">Couleur du Nœud</label>
         </div>
         <div>
-            <label for="node-image">URL de l'Image :</label>
-            <input type="text" id="node-image">
+            <input type="text" id="node-image" placeholder="URL de l'Image">
         </div>
         <div>
-            <label for="node-text">Texte du Nœud :</label>
-            <textarea id="node-text"></textarea>
+            <textarea id="node-text" placeholder="Texte du Nœud"></textarea>
         </div>
         <div>
             <button onclick="addNode()">Ajouter un Nœud</button>
         </div>
         <div>
-            <label for="from-node">De Nœud :</label>
             <select id="from-node">
                 <option value="0">Sélectionnez un Nœud</option>
             </select>
-            <label for="to-node">À Nœud :</label>
             <select id="to-node">
                 <option value="0">Sélectionnez un Nœud</option>
             </select>
             <button onclick="addEdge()">Ajouter une Relation</button>
-            <button onclick="removeEdge()">Supprimer une Relation</button> <!-- Nouveau bouton pour supprimer une relation -->
+            <button onclick="removeEdge()">Supprimer une Relation</button>
         </div>
         <div>
-            <label for="delete-node">Nœud à Supprimer :</label>
             <select id="delete-node">
                 <option value="0">Sélectionnez un Nœud</option>
             </select>
@@ -125,6 +124,7 @@
             <button onclick="saveToFile()">Enregistrer</button>
             <input type="file" id="file-input" onchange="loadFromFile(event)">
         </div>
+    </div>
     </div>
 
     <script type="text/javascript">
