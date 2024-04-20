@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carte Mentale Interactive</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis-network.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis-network.min.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        #mymap {
+            height: calc(100% - 200px);
+        }
+        .options-container {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-top: 1px solid #ccc;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .options-container > div {
+            margin-bottom: 10px;
+        }
+        .options-container input[type="text"],
+        .options-container select {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+        .options-container button {
+            padding: 8px 15px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        .options-container button:hover {
+            background-color: #45a049;
+        }
+        .color-picker {
+            display: flex;
+            align-items: center;
+        }
+        .color-picker label {
+            margin-right: 10px;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -300px;
+            width: 300px;
+            height: 100%;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .sidebar.active {
+            right: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="mymap"></div>
+    <div class="sidebar" id="sidebar">
+        <div id="node-content"></div>
+    </div>
+    <div class="options-container">
+        <div>
+            <label for="node-name">Nom du Nœud :</label>
+            <input type="text" id="node-name">
+        </div>
+        <div>
+            <label for="node-color">Couleur du Nœud :</label>
+            <input type="color" id="node-color" onchange="changeNodeColor()">
+        </div>
+        <div>
+            <label for="node-image">URL de l'Image :</label>
+            <input type="text" id="node-image">
+        </div>
+        <div>
+            <label for="node-text">Texte du Nœud :</label>
+            <textarea id="node-text"></textarea>
+        </div>
+        <div>
+            <button onclick="addNode()">Ajouter un Nœud</button>
+        </div>
+        <div>
+            <label for="from-node">De Nœud :</label>
+            <select id="from-node">
+                <option value="0">Sélectionnez un Nœud</option>
+            </select>
+            <label for="to-node">À Nœud :</label>
+            <select id="to-node">
+                <option value="0">Sélectionnez un Nœud</option>
+            </select>
+            <button onclick="addEdge()">Ajouter une Relation</button>
+        </div>
+        <div>
+            <label for="delete-node">Nœud à Supprimer :</label>
+            <select id="delete-node">
+                <option value="0">Sélectionnez un Nœud</option>
+            </select>
+            <button onclick="deleteNode()">Supprimer le Nœud</button>
+        </div>
+        <div>
+            <button onclick="saveToFile()">Enregistrer</button>
+            <input type="file" id="file-input" onchange="loadFromFile(event)">
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var nodes = new vis.DataSet();
+        var edges = new vis.DataSet();
+
+        var container = document.getElementById('mymap');
+        var data = {
+            nodes: nodes,
+            edges: edges
+        };
+        var options = {
+            nodes: {
+                font: {
+                    size: 16
+                },
+                labelHighlightBold: false
+            },
+            edges: {
+                arrows: {
+                    to: true
+                }
+            },
+            interaction: {
+                hover: true
+            }
+        };
+
+        var network = new vis.Network(container, data, options);
+
+
+        function changeNodeColor() {
+            var selectedNodes = network.getSelectedNodes();
+            if (selectedNodes.length > 0) {
+                var nodeId = selectedNodes[0];
+                var color = document.getElementById('node-color').value;
+                nodes.update([{ id: nodeId, color: color }]);
+            }
+        }
+
+
+        function addNode() {
+            var newNodeId = nodes.length + 1;
+            var newNodeName = document.getElementById('node-name').value.trim();
+            var newNodeImage = document.getElementById('node-image').value.trim();
+            var newNodeText = document.getElementById('node-text').value.trim();
+            var nodeShape = 'image'; // Par défaut, utiliser une forme d'image
+
+
+            if (newNodeImage === '') {
+                nodeShape = 'circle';
+            }
+
+
+            if (newNodeName === '') {
+                newNodeName = 'Nœud ' + newNodeId;
+            }
+
+
+            nodes.add({ id: newNodeId, label: newNodeName, image: newNodeImage, color: '#97C2FC', shape: nodeShape, content: newNodeText });
+            fillNodeOptions(); // Mettre à jour les options pour la suppression
+        }
+
+
+        function fillNodeOptions() {
+            var nodeOptions = '';
+            nodes.forEach(function(node) {
+                nodeOptions += '<option value="' + node.id + '">' + node.label + '</option>';
+            });
+            document.getElementById('from-node').innerHTML = nodeOptions;
+            document.getElementById('to-node').innerHTML = nodeOptions;
+            document.getElementById('delete-node').innerHTML = nodeOptions; // Remplir les options pour la suppression
+        }
+
+
+        fillNodeOptions();
+
+
+        function addEdge() {
+            var fromNode = parseInt(document.getElementById('from-node').value);
+            var toNode = parseInt(document.getElementById('to-node').value);
+            if (fromNode !== 0 && toNode !== 0 && fromNode !== toNode) {
+                edges.add({ from: fromNode, to: toNode });
+            } else {
+                alert('Veuillez sélectionner des nœuds valides.');
+            }
+        }
+
+
+        function deleteNode() {
+            var nodeId = parseInt(document.getElementById('delete-node').value);
+            if (nodeId !== 0) {
+                nodes.remove({ id: nodeId });
+                edges.remove({ from: nodeId }); // Supprimer les bords liés au nœud supprimé
+                edges.remove({ to: nodeId });
+                fillNodeOptions(); // Mettre à jour les options après la suppression
+            } else {
+                alert('Veuillez sélectionner un nœud à supprimer.');
+            }
+        }
+
+
+        function saveToFile() {
+            var dataToSave = {
+                nodes: nodes.get(),
+                edges: edges.get()
+            };
+            var json = JSON.stringify(dataToSave, null, 2);
+            var blob = new Blob([json], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'donnees_carte_mentale.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+
+        function loadFromFile(event) {
+            var file = event.target.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var contents = e.target.result;
+                var dataFromFile = JSON.parse(contents);
+                nodes.clear();
+                edges.clear();
+                nodes.add(dataFromFile.nodes);
+                edges.add(dataFromFile.edges);
+                fillNodeOptions();
+            };
+            reader.readAsText(file);
+        }
+
+       
+        network.on('selectNode', function(event) {
+            var nodeId = event.nodes[0];
+            var selectedNode = nodes.get(nodeId);
+            var sidebar = document.getElementById('sidebar');
+            var nodeContent = document.getElementById('node-content');
+            nodeContent.innerHTML = '<h2>' + selectedNode.label + '</h2><p>' + selectedNode.content + '</p>';
+            sidebar.classList.add('active');
+        });
+
+
+        network.on('deselectNode', function() {
+            var sidebar = document.getElementById('sidebar');
+            sidebar.classList.remove('active');
+        });
+    </script>
+</body>
+</html>
