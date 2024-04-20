@@ -26,6 +26,7 @@
             left: 0;
             right: 0;
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
         }
@@ -111,6 +112,7 @@
                 <option value="0">Sélectionnez un Nœud</option>
             </select>
             <button onclick="addEdge()">Ajouter une Relation</button>
+            <button onclick="removeEdge()">Supprimer une Relation</button> <!-- Nouveau bouton pour supprimer une relation -->
         </div>
         <div>
             <label for="delete-node">Nœud à Supprimer :</label>
@@ -153,7 +155,7 @@
 
         var network = new vis.Network(container, data, options);
 
-
+  
         function changeNodeColor() {
             var selectedNodes = network.getSelectedNodes();
             if (selectedNodes.length > 0) {
@@ -163,29 +165,25 @@
             }
         }
 
-
+ 
         function addNode() {
             var newNodeId = nodes.length + 1;
             var newNodeName = document.getElementById('node-name').value.trim();
             var newNodeImage = document.getElementById('node-image').value.trim();
             var newNodeText = document.getElementById('node-text').value.trim();
-            var nodeShape = 'image'; // Par défaut, utiliser une forme d'image
+            var nodeColor = document.getElementById('node-color').value;
 
-
+            var nodeShape = 'image';
             if (newNodeImage === '') {
                 nodeShape = 'circle';
             }
-
-
             if (newNodeName === '') {
                 newNodeName = 'Nœud ' + newNodeId;
             }
 
-
-            nodes.add({ id: newNodeId, label: newNodeName, image: newNodeImage, color: '#97C2FC', shape: nodeShape, content: newNodeText });
-            fillNodeOptions(); // Mettre à jour les options pour la suppression
+            nodes.add({ id: newNodeId, label: newNodeName, image: newNodeImage, color: nodeColor, shape: nodeShape, content: newNodeText });
+            fillNodeOptions();
         }
-
 
         function fillNodeOptions() {
             var nodeOptions = '';
@@ -194,10 +192,8 @@
             });
             document.getElementById('from-node').innerHTML = nodeOptions;
             document.getElementById('to-node').innerHTML = nodeOptions;
-            document.getElementById('delete-node').innerHTML = nodeOptions; // Remplir les options pour la suppression
+            document.getElementById('delete-node').innerHTML = nodeOptions;
         }
-
-
         fillNodeOptions();
 
 
@@ -212,13 +208,29 @@
         }
 
 
+        function removeEdge() {
+            var fromNode = parseInt(document.getElementById('from-node').value);
+            var toNode = parseInt(document.getElementById('to-node').value);
+            if (fromNode !== 0 && toNode !== 0) {
+                var edgeId = edges.getIds({ filter: function(item) { return item.from === fromNode && item.to === toNode; } });
+                if (edgeId.length > 0) {
+                    edges.remove({ id: edgeId[0] });
+                } else {
+                    alert('La relation sélectionnée n\'existe pas.');
+                }
+            } else {
+                alert('Veuillez sélectionner des nœuds valides.');
+            }
+        }
+
+
         function deleteNode() {
             var nodeId = parseInt(document.getElementById('delete-node').value);
             if (nodeId !== 0) {
                 nodes.remove({ id: nodeId });
-                edges.remove({ from: nodeId }); // Supprimer les bords liés au nœud supprimé
+                edges.remove({ from: nodeId });
                 edges.remove({ to: nodeId });
-                fillNodeOptions(); // Mettre à jour les options après la suppression
+                fillNodeOptions();
             } else {
                 alert('Veuillez sélectionner un nœud à supprimer.');
             }
@@ -242,7 +254,7 @@
             URL.revokeObjectURL(url);
         }
 
-
+ 
         function loadFromFile(event) {
             var file = event.target.files[0];
             if (!file) return;
@@ -259,7 +271,7 @@
             reader.readAsText(file);
         }
 
-       
+   
         network.on('selectNode', function(event) {
             var nodeId = event.nodes[0];
             var selectedNode = nodes.get(nodeId);
