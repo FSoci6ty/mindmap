@@ -6,7 +6,7 @@
     <title>Carte Mentale Interactive</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis-network.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis-network.min.js"></script>
-   <style>
+    <style>
         body, html {
             margin: 0;
             padding: 0;
@@ -15,7 +15,7 @@
             font-family: Arial, sans-serif;
         }
         #mymap {
-            height: calc(100% - 150px);
+            height: 100%;
         }
         .options-container {
             background-color: #f9f9f9;
@@ -27,7 +27,7 @@
             right: 0;
             display: flex;
             flex-wrap: wrap;
-            justify-content: space-around;
+            justify-content: space-between;
             align-items: center;
         }
         .options-container > div {
@@ -35,15 +35,14 @@
         }
         .options-container input[type="text"],
         .options-container select {
-            padding: 8px;
+            padding: 5px;
             border: 1px solid #ccc;
             border-radius: 3px;
             font-size: 14px;
-            width: 200px;
-            box-sizing: border-box;
+            margin-right: 10px;
         }
         .options-container button {
-            padding: 10px 20px;
+            padding: 8px 15px;
             border: none;
             background-color: #4CAF50;
             color: white;
@@ -51,6 +50,7 @@
             cursor: pointer;
             font-size: 14px;
             transition: background-color 0.3s;
+            margin-right: 10px;
         }
         .options-container button:hover {
             background-color: #45a049;
@@ -58,56 +58,75 @@
         .color-picker {
             display: flex;
             align-items: center;
+            margin-right: 10px;
         }
         .color-picker label {
             margin-right: 10px;
         }
         .sidebar {
+            display: none;
             position: fixed;
             top: 0;
-            right: -300px;
+            right: 0;
             width: 300px;
             height: 100%;
             background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            transition: right 0.3s ease;
-            overflow-y: auto;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
             padding: 20px;
+            z-index: 1000;
+            overflow-y: auto;
         }
         .sidebar.active {
-            right: 0;
+            display: block;
         }
-        .options-container > div > * {
-            margin-right: 10px;
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+        .sidebar-content {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .options-container label {
+            margin-right: 5px;
         }
     </style>
 </head>
 <body>
     <div id="mymap"></div>
     <div class="sidebar" id="sidebar">
-        <div id="node-content"></div>
+        <span class="close-btn" onclick="hideSidebar()">&#10006;</span>
+        <h2 id="node-title"></h2>
+        <p id="node-content" class="sidebar-content"></p>
     </div>
-    <div class="options-container">
+    <div class="options-container" id="options-container">
         <div>
-            <input type="text" id="node-name" placeholder="Nom du Nœud">
+            <label for="node-name">Nom du Nœud :</label>
+            <input type="text" id="node-name">
         </div>
         <div>
+            <label for="node-color">Couleur du Nœud :</label>
             <input type="color" id="node-color" onchange="changeNodeColor()">
-            <label for="node-color">Couleur du Nœud</label>
         </div>
         <div>
-            <input type="text" id="node-image" placeholder="URL de l'Image">
+            <label for="node-image">URL de l'Image :</label>
+            <input type="text" id="node-image">
         </div>
         <div>
-            <textarea id="node-text" placeholder="Texte du Nœud"></textarea>
+            <label for="node-text">Texte du Nœud :</label>
+            <textarea id="node-text"></textarea>
         </div>
         <div>
             <button onclick="addNode()">Ajouter un Nœud</button>
         </div>
         <div>
+            <label for="from-node">De Nœud :</label>
             <select id="from-node">
                 <option value="0">Sélectionnez un Nœud</option>
             </select>
+            <label for="to-node">À Nœud :</label>
             <select id="to-node">
                 <option value="0">Sélectionnez un Nœud</option>
             </select>
@@ -115,16 +134,19 @@
             <button onclick="removeEdge()">Supprimer une Relation</button>
         </div>
         <div>
+            <label for="delete-node">Nœud à Supprimer :</label>
             <select id="delete-node">
                 <option value="0">Sélectionnez un Nœud</option>
             </select>
             <button onclick="deleteNode()">Supprimer le Nœud</button>
         </div>
         <div>
+            <button onclick="togglePhysics()">Activer / Désactiver la Physique</button>
+        </div>
+        <div>
             <button onclick="saveToFile()">Enregistrer</button>
             <input type="file" id="file-input" onchange="loadFromFile(event)">
         </div>
-    </div>
     </div>
 
     <script type="text/javascript">
@@ -150,12 +172,15 @@
             },
             interaction: {
                 hover: true
+            },
+            physics: {
+                enabled: true
             }
         };
 
         var network = new vis.Network(container, data, options);
 
-  
+
         function changeNodeColor() {
             var selectedNodes = network.getSelectedNodes();
             if (selectedNodes.length > 0) {
@@ -165,7 +190,7 @@
             }
         }
 
- 
+
         function addNode() {
             var newNodeId = nodes.length + 1;
             var newNodeName = document.getElementById('node-name').value.trim();
@@ -254,7 +279,7 @@
             URL.revokeObjectURL(url);
         }
 
- 
+
         function loadFromFile(event) {
             var file = event.target.files[0];
             if (!file) return;
@@ -271,13 +296,21 @@
             reader.readAsText(file);
         }
 
-   
+
+        function togglePhysics() {
+            options.physics.enabled = !options.physics.enabled;
+            network.setOptions(options);
+        }
+
+
         network.on('selectNode', function(event) {
             var nodeId = event.nodes[0];
             var selectedNode = nodes.get(nodeId);
             var sidebar = document.getElementById('sidebar');
+            var nodeTitle = document.getElementById('node-title');
             var nodeContent = document.getElementById('node-content');
-            nodeContent.innerHTML = '<h2>' + selectedNode.label + '</h2><p>' + selectedNode.content + '</p>';
+            nodeTitle.textContent = selectedNode.label;
+            nodeContent.textContent = selectedNode.content;
             sidebar.classList.add('active');
         });
 
@@ -286,6 +319,13 @@
             var sidebar = document.getElementById('sidebar');
             sidebar.classList.remove('active');
         });
+
+ 
+        function hideSidebar() {
+            var sidebar = document.getElementById('sidebar');
+            sidebar.classList.remove('active');
+            network.unselectAll(); // Désélectionner tous les nœuds
+        }
     </script>
 </body>
 </html>
